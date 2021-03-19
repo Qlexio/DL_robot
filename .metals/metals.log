@@ -1,0 +1,11 @@
+[0m2021.03.06 15:57:25 INFO  Started: Metals version 0.10.0 in workspace 'C:\Users\nanar\Documents\Python\Metatrader' for client vscode 1.54.1.[0m
+[0m2021.03.06 15:57:26 INFO  time: initialize in 1.28s[0m
+[0m2021.03.06 15:57:28 WARN  Build server is not auto-connectable.[0m
+[0m2021.03.06 15:57:28 WARN  no build tool detected in workspace 'C:\Users\nanar\Documents\Python\Metatrader'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. [0m
+mars 06, 2021 4:04:12 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFOS: Unsupported notification method: $/setTraceNotification
+mars 06, 2021 4:04:25 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFOS: Unsupported notification method: $/setTraceNotification
+mars 06, 2021 4:24:54 PM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
+INFOS: Unsupported notification method: $/setTraceNotification
+[0m2021.03.06 16:26:31 INFO  shutting down Metals[0m

@@ -1,0 +1,6 @@
+{
+    "files.watcherExclude": {
+        "**/target": true
+    },
+    "python.pythonPath": "MT5\\Scripts\\python.exe"
+}
