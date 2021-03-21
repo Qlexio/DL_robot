@@ -23,71 +23,96 @@ if authorized:
 else:
    print(f"Failed to connect to account {account}")
 
-# currency --argparse ???
-currency = "GBPUSD" # "EURCHF" "EURUSD"
+# symbol --argparse ???
+symbol = "GBPUSD" # "EURCHF" "EURUSD"
+nb_bars = 100 # 1_000
 
-# indicator initialization
-initialization = True
-while initialization:
-   if time() % 300 < 300-30:
-      print("Test ok")
-      initialization = False
+timeframe = mt5.TIMEFRAME_M5
 
-      start = time()
-      # Get forex datas
-      eurusd_M5 = mt5.copy_rates_from_pos(currency, mt5.TIMEFRAME_M5, 1, 1_000) # 1_000
+# Get dataset of previous trades recorded in order_dataset.csv
+full_dataset = pd.read_csv("order_dataset.csv")
+if len(full_dataset) == 0:
+   closing = False
+else:
+   closing = True
 
-      pd_eurusd = pd.DataFrame(eurusd_M5)
+# Wait until next bar before launching
+while time() % 300 > 1:
+   sleep(1)
 
-      # Get indicators
-      # CCI
-      pd_eurusd["CCI_M5"] = talib.CCI(pd_eurusd["high"], pd_eurusd["low"], pd_eurusd["close"], timeperiod= 14)
-      # Relative Strength Index
-      pd_eurusd["RSI_M5"] = talib.RSI(pd_eurusd["close"], timeperiod=14)
-
-      # Remove first empty lines of M30
-      for i in range(0,7):
-         if pd_eurusd["time"].iloc[0] % 1800 == 0:
-            break
-         else:
-            pd_eurusd = pd_eurusd.drop([i])
-
-      # Adjust M30 open, high, low, close values
-      pd_eurusd["open_M30"], pd_eurusd["high_M30"], pd_eurusd["low_M30"], pd_eurusd["close_M30"] = M30create(pd_eurusd)
-
-      # Test fractal *** signalperiod = 15, signalsmaperiod = 30
-      pd_eurusd["CustFractSignal"], pd_eurusd["CustFractSignalSMA"] = fractal_ind(pd_eurusd)
-
-      test = pd.DataFrame(pd_eurusd, columns=["time", "open_M30", "high_M30", "low_M30", "close_M30"])
-      print(test[-15:])
-      print("Time running: ", time()-start)
-
-   else:
-      print(datetime.fromtimestamp(time()))
-      sleep(1)
-
+# Set launching and start app
 running = True
 
 while running:
    if time() % 300 <= 10:
-      # Get bar -1 to calculate current indicator values
-      current_M5 = mt5.copy_rates_from_pos(currency, mt5.TIMEFRAME_M5, 1, 1) # 1_000
+      pd_current = get_datas(symbol, timeframe, nb_bars)
 
-      pd_current = pd.DataFrame(current_M5)
-      print(pd_current)
+      # Check to open positon
+
+      # Test to buy
+      lot = 0.1
+      point = mt5.symbol_info(symbol).point
+      price = mt5.symbol_info_tick(symbol).ask
+      deviation = 20
+      request = {
+         "action": mt5.TRADE_ACTION_DEAL,
+         "symbol": symbol,
+         "volume": lot,
+         "type": mt5.ORDER_TYPE_BUY,
+         "price": price,
+         # "sl": price - 100 * point,
+         # "tp": price + 100 * point,
+         "deviation": deviation,
+         # "magic": 234000,
+         # "comment": "python script open",
+         "type_time": mt5.ORDER_TIME_GTC,
+         "type_filling": mt5.ORDER_FILLING_RETURN,
+      }
+      # send a trading request
+      result = mt5.order_send(request)
+      # check the execution result
+      print("1. order_send(): by {} {} lots at {}".format(symbol,lot,price))
+      if result.retcode != mt5.TRADE_RETCODE_DONE:
+         print("2. order_send failed, retcode={}".format(result.retcode))
+      print("2. order_send done, ", result)
+      closing = True
+
+      # Check for closing position
+
+      sleep(60)
    else:
+      # Check for closing position
+
+      # Test for closing position
+      if closing:
+         position_id=result.order
+         price=mt5.symbol_info_tick(symbol).bid
+         deviation=20
+         request={
+            "action": mt5.TRADE_ACTION_DEAL,
+            "symbol": symbol,
+            "volume": lot,
+            "type": mt5.ORDER_TYPE_SELL,
+            "position": position_id,
+            "price": price,
+            "deviation": deviation,
+            "magic": 234000,
+            "comment": "python script close",
+            "type_time": mt5.ORDER_TIME_GTC,
+            "type_filling": mt5.ORDER_FILLING_RETURN,
+         }
+         # send a trading request
+         result=mt5.order_send(request)
+         # check the execution result
+         print("3. close position #{}: sell {} {} lots at {} with deviation={} points".format(position_id,symbol,lot,price,deviation));
+         if result.retcode != mt5.TRADE_RETCODE_DONE:
+            print("4. order_send failed, retcode={}".format(result.retcode))
+            print("   result",result)
+         else:
+            print("4. position #{} closed, {}".format(position_id,result))
+         running = False
+
       sleep(10)
 
-# # get formatted datetme
-# date = datetime.now().strftime("%Y %m %d %H %M").split()
-# date[3] = (int(date[3]) + 3) % 24
-# for num, d in enumerate(date):
-#    date[num] = int(d)
-
-# eurusd_rates = mt5.copy_rates_from("EURUSD", mt5.TIMEFRAME_M1, datetime(date[0],date[1],date[2],date[3],date[4]), 10080)
-# # for eurusd in eurusd_rates:
-# #    print(datetime.fromtimestamp(eurusd[0]))
-# print(type(eurusd_rates))
-# print(eurusd_rates)
 
 mt5.shutdown()
