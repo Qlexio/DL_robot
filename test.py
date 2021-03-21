@@ -88,7 +88,33 @@ while running:
 
       # Check for closing position
       if closing:
-         pass
+         # Get positions from csv
+         full_dataset = pd.read_csv("order_dataset.csv")
+         current_datas = mt5.copy_rates_from_pos(symbol, timeframe, 0, 2)
+         # Iter positions
+         for i in range(len(full_dataset)):
+         # If BUY or SELL
+         # If current close price above or under TP recalculate TP
+         # Elif current close under or above SL, close position and delete line from csv
+            if full_dataset["type"].iloc[i] == "BUY":
+               if full_dataset["takeprofit"].iloc[i] <= current_datas[0][4]:
+                  full_dataset["takeprofit"].iloc[i], full_dataset["stoploss"].iloc[i] = pivot(current_datas[1][2],
+                     current_datas[1][3], current_datas[1][4])
+                  full_dataset.to_csv("order_dataset.csv", index=False)
+               elif full_dataset["stoploss"].iloc[i] >= current_datas[0][4] and current_datas[0][6] <= 20:
+                  close_position(lots, mt5.symbol_info_tick(symbol).bid, symbol, mt5.ORDER_TYPE_SELL, full_dataset["ticket"].iloc[i])
+                  full_dataset = full_dataset.drop([i])
+                  full_dataset.to_csv("order_dataset.csv", index=False)
+
+            elif full_dataset["type"].iloc[i] == "SELL":
+               if full_dataset["takeprofit"].iloc[i] >= current_datas[0][4]:
+                  full_dataset["stoploss"].iloc[i], full_dataset["takeprofit"].iloc[i] = pivot(current_datas[1][2],
+                     current_datas[1][3], current_datas[1][4])
+                  full_dataset.to_csv("order_dataset.csv", index=False)
+               elif full_dataset["stoploss"].iloc[i] <= current_datas[0][4] and current_datas[0][6] <= 20:
+                  close_position(lots, mt5.symbol_info_tick(symbol).bid, symbol, mt5.ORDER_TYPE_SELL, full_dataset["ticket"].iloc[i])
+                  full_dataset = full_dataset.drop([i])
+                  full_dataset.to_csv("order_dataset.csv", index=False)
 
       sleep(10)
    else:
